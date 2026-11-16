@@ -1,10 +1,13 @@
-from app.models.user_role import UserRole
-from app.models.users import User
-from base import Base
+from app.models.base import Base
 from uuid import UUID, uuid4
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Boolean, DateTime, String, Uuid, func
+from sqlalchemy import DateTime, String, Uuid, func
 from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+
+    from app.models.users import User
 
 
 class Role(Base):
@@ -22,5 +25,5 @@ class Role(Base):
     )
 
     user: Mapped["User"] = relationship(
-        "User", back_populates="role", secondary=UserRole, lazy="selectin"
+        back_populates="role", secondary="user_roles", lazy="selectin"
     )

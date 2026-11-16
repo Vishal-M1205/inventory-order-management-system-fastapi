@@ -2,10 +2,10 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import URL
-from core.config import config
+from app.core.config import config
 from sqlalchemy.pool import AsyncAdaptedQueuePool
 
-conn_url = URL(
+conn_url = URL.create(
     host=config.database_host,
     username=config.database_user,
     password=config.database_password,

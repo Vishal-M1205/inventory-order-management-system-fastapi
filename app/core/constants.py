@@ -1,0 +1,1 @@
+GENDER = ("MALE", "FEMALE", "OTHER")

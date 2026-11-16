@@ -9,6 +9,11 @@ class Config(BaseSettings):
     database_drivername: str
     database_port: int
 
+    jwt_access_token_expiration_minute: int
+    jwt_refresh_token_expiration_minute: int
+    jwt_hashing_algorithm: str
+    jwt_secret_key: str
+
     model_config = SettingsConfigDict(env_file=".env")
 
 
