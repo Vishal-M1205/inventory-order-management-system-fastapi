@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 from app.models.base import Base
 from uuid import UUID, uuid4
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -8,6 +10,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
     from app.models.users import User
+
+
+class RoleEnum(StrEnum):
+    ADMIN = "ADMIN"
+    EMPLOYEE = "EMPLOYEE"
+    CUSTOMER = "CUSTOMER"
+    MANAGER = "MANAGER"
 
 
 class Role(Base):

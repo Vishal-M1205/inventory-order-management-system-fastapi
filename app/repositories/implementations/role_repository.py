@@ -13,4 +13,7 @@ class RoleRepository:
 
         data = await self.session.execute(stmnt)
 
-        return data.scalar_one_or_none()
+        data = data.scalar_one_or_none()
+
+        if data:
+            return data.id

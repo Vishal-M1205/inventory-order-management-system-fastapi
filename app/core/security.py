@@ -23,19 +23,19 @@ def create_jwt_token(token_data: dict, type: str = "access") -> str:
         expire_minutes = datetime.now(timezone.utc) + timedelta(
             minutes=config.jwt_access_token_expiration_minute
         )
+        encoded_data["type"] = "access"
 
     elif type == "refresh":
         expire_minutes = datetime.now(timezone.utc) + timedelta(
             minutes=config.jwt_refresh_token_expiration_minute
         )
+        encoded_data["type"] = "refresh"
 
     encoded_data["exp"] = expire_minutes
     role = encoded_data.get("role", None)
 
     if role and type == "access":
         encoded_data["scopes"] = SCOPES[role]
-
-    encoded_data["type"] = "access"
 
     return jwt.encode(
         encoded_data, key=config.jwt_secret_key, algorithm=config.jwt_hashing_algorithm
