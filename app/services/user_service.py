@@ -9,6 +9,7 @@ from app.repositories.implementations.role_repository import RoleRepository
 from app.repositories.implementations.user_repository import UserRepository
 from app.repositories.implementations.user_role_repository import UserRoleRepository
 from app.schemas.user import RegisterUser
+from app.schemas.user_profile import UserProfileCreate
 
 
 class UserService:
@@ -58,3 +59,8 @@ class UserService:
 
     async def register_manager(self, manager_data: RegisterUser) -> Optional[User]:
         return await self._register(manager_data, RoleEnum.MANAGER)
+
+    async def add_user_profile(
+        self, current_user: User, user_id: int, user_data: UserProfileCreate
+    ):
+        pass

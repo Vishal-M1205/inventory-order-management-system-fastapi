@@ -25,7 +25,7 @@ class UserProfile(Base):
         Uuid, ForeignKey("users.id"), unique=True, index=True, nullable=False
     )
     age: Mapped[int] = mapped_column(Integer, nullable=False)
-    mobile_numner: Mapped[str] = mapped_column(String(13), nullable=False, index=True)
+    mobile_number: Mapped[str] = mapped_column(String(13), nullable=False, index=True)
     gender: Mapped[str] = mapped_column(String(10), nullable=False)
     date_of_birth: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 

@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.models.user_profile import EmployeeProfile
+    from app.models.user_profile import UserProfile
     from app.models.roles import Role
 
 
@@ -33,6 +33,4 @@ class User(Base):
         back_populates="user", secondary="user_roles", lazy="selectin"
     )
 
-    profile: Mapped["EmployeeProfile"] = relationship(
-        "EmployeeProfile", back_populates="user"
-    )
+    profile: Mapped["UserProfile"] = relationship("UserProfile", back_populates="user")
