@@ -12,8 +12,8 @@ if TYPE_CHECKING:
     from app.models.users import User
 
 
-class EmployeeProfile(Base):
-    __tablename__ = "employee_profile"
+class UserProfile(Base):
+    __tablename__ = "user_profile"
 
     __table_args__ = (
         CheckConstraint("age >= 18", name="employee_profile_age_check"),

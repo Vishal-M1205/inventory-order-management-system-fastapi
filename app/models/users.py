@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.models.employee_profile import EmployeeProfile
+    from app.models.user_profile import EmployeeProfile
     from app.models.roles import Role
 
 
