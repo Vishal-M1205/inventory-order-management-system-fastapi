@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from app.api.routes.auth import router as auth_router
+from app.api.routes.profile import router as profile_router
 from app.exceptions.custom_exception import AppException
 
 app = FastAPI()
@@ -12,6 +13,7 @@ def base_function():
 
 
 app.include_router(auth_router)
+app.include_router(profile_router)
 
 
 @app.exception_handler(AppException)

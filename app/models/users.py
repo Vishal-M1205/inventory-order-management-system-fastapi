@@ -1,16 +1,19 @@
-from app.models.base import Base
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID, uuid4
+
+from sqlalchemy import Boolean, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Boolean, DateTime, String, Uuid, func
-from datetime import datetime
-from typing import TYPE_CHECKING
+
+from app.database.base import Base
+from app.database.mixins import TimestampMixin
 
 if TYPE_CHECKING:
-    from app.models.user_profile import UserProfile
+    from app.models.refresh_token import RefreshToken
     from app.models.roles import Role
+    from app.models.user_profile import UserProfile
 
 
-class User(Base):
+class User(Base, TimestampMixin):
     __tablename__ = "users"
 
     id: Mapped[UUID] = mapped_column(
@@ -22,15 +25,21 @@ class User(Base):
     )
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    role_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("roles.id"), nullable=False, index=True
     )
 
     role: Mapped["Role"] = relationship(
-        back_populates="user", secondary="user_roles", lazy="selectin"
+        "Role", back_populates="users", lazy="selectin"
     )
-
-    profile: Mapped["UserProfile"] = relationship("UserProfile", back_populates="user")
+    profile: Mapped[Optional["UserProfile"]] = relationship(
+        "UserProfile",
+        back_populates="user",
+        foreign_keys="UserProfile.user_id",
+        uselist=False,
+    )
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        "RefreshToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )

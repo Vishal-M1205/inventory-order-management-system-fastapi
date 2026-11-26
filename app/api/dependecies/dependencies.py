@@ -1,56 +1,90 @@
 from typing import Annotated
-from fastapi.security import OAuth2PasswordBearer, SecurityScopes
-from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
+
 from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer, SecurityScopes
+import jwt
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.scopes import SCOPES
 from app.core.security import decode_jwt_token
 from app.database.database import get_db_session
 from app.exceptions.custom_exception import (
     ForbiddenException,
+    InactiveUserException,
     InvalidTokenException,
-    NotFoundException,
+    TokenExpiredException,
+)
+from app.models.users import User
+from app.repositories.implementations.refresh_token_repository import (
+    RefreshTokenRepository,
 )
 from app.repositories.implementations.role_repository import RoleRepository
+from app.repositories.implementations.user_profile_repository import (
+    UserProfileRepository,
+)
 from app.repositories.implementations.user_repository import UserRepository
-from app.repositories.implementations.user_role_repository import UserRoleRepository
 from app.services.auth_service import AuthService
+from app.services.user_profile_service import UserProfileService
 from app.services.user_service import UserService
 
 DB_SESSION = Annotated[AsyncSession, Depends(get_db_session)]
 o_auth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-def get_user_repository(session: DB_SESSION):
+def get_user_repository(session: DB_SESSION) -> UserRepository:
     return UserRepository(session=session)
 
 
-def get_role_repository(session: DB_SESSION):
-    return RoleRepository(session)
+def get_role_repository(session: DB_SESSION) -> RoleRepository:
+    return RoleRepository(session=session)
 
 
-def get_user_role_repository(sesssion: DB_SESSION):
-    return UserRoleRepository(sesssion)
+def get_user_profile_repository(session: DB_SESSION) -> UserProfileRepository:
+    return UserProfileRepository(session=session)
+
+
+def get_refresh_token_repository(session: DB_SESSION) -> RefreshTokenRepository:
+    return RefreshTokenRepository(session=session)
 
 
 def get_auth_service(
+    session: DB_SESSION,
     user_repository: Annotated[UserRepository, Depends(get_user_repository)],
+    refresh_token_repository: Annotated[
+        RefreshTokenRepository, Depends(get_refresh_token_repository)
+    ],
 ) -> AuthService:
-    return AuthService(user_repository=user_repository)
+    return AuthService(
+        session=session,
+        user_repository=user_repository,
+        refresh_token_repository=refresh_token_repository,
+    )
 
 
 def get_user_service(
+    session: DB_SESSION,
     user_repository: Annotated[UserRepository, Depends(get_user_repository)],
     role_repository: Annotated[RoleRepository, Depends(get_role_repository)],
-    user_role_repository: Annotated[
-        UserRoleRepository, Depends(get_user_role_repository)
-    ],
-    session: DB_SESSION,
-):
+) -> UserService:
     return UserService(
         session=session,
         user_repository=user_repository,
         role_repository=role_repository,
-        user_role_repository=user_role_repository,
+    )
+
+
+def get_user_profile_service(
+    session: DB_SESSION,
+    user_repository: Annotated[UserRepository, Depends(get_user_repository)],
+    profile_repository: Annotated[
+        UserProfileRepository, Depends(get_user_profile_repository)
+    ],
+) -> UserProfileService:
+    return UserProfileService(
+        session=session,
+        user_repository=user_repository,
+        profile_repository=profile_repository,
     )
 
 
@@ -59,28 +93,46 @@ async def get_current_user(
     security_scopes: SecurityScopes,
     session: DB_SESSION,
     user_repository: Annotated[UserRepository, Depends(get_user_repository)],
-):
-    token_data = decode_jwt_token(token)
-
-    if not token_data.get("sub", None):
+) -> User:
+    try:
+        payload = decode_jwt_token(token)
+    except jwt.ExpiredSignatureError:
+        raise TokenExpiredException()
+    except jwt.PyJWTError:
         raise InvalidTokenException()
 
-    user = await user_repository.get_user_by_email(token_data.get("sub"))
-    await session.commit()
+    if payload.get("type") != "access":
+        raise InvalidTokenException("Invalid token type.")
+
+    sub = payload.get("sub")
+    if not sub:
+        raise InvalidTokenException()
+
+    try:
+        user_id = UUID(sub)
+    except ValueError:
+        raise InvalidTokenException()
+
+    user = await user_repository.get_user_by_id(user_id)
+    if user:
+        _ = user.role
+        session.expunge_all()
+    # Close SQLAlchemy's autobegin read transaction so services can call session.begin()
+    await session.rollback()
 
     if not user:
-        raise NotFoundException("User not found")
+        raise InvalidTokenException("User not found.")
 
-    role = token_data.get("role", None)
+    if not user.is_active:
+        raise InactiveUserException()
 
-    if role:
-        if user.role.role != role:
-            raise InvalidTokenException()
+    role_name = user.role.role if user.role else None
+    allowed_scopes = SCOPES.get(role_name, [])
 
-        allowed_scopes = SCOPES[role]
-
-        for scope in security_scopes.scopes:
-            if not scope in allowed_scopes:
-                raise ForbiddenException()
+    for scope in security_scopes.scopes:
+        if scope not in allowed_scopes:
+            raise ForbiddenException(
+                f"Not enough permissions. Missing scope: {scope}"
+            )
 
     return user
