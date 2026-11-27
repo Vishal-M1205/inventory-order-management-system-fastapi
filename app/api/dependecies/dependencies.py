@@ -16,6 +16,8 @@ from app.exceptions.custom_exception import (
     TokenExpiredException,
 )
 from app.models.users import User
+from app.repositories.implementations.category_repository import CategoryRepository
+from app.repositories.implementations.product_repository import ProductRepository
 from app.repositories.implementations.refresh_token_repository import (
     RefreshTokenRepository,
 )
@@ -25,6 +27,8 @@ from app.repositories.implementations.user_profile_repository import (
 )
 from app.repositories.implementations.user_repository import UserRepository
 from app.services.auth_service import AuthService
+from app.services.category_service import CategoryService
+from app.services.product_service import ProductService
 from app.services.user_profile_service import UserProfileService
 from app.services.user_service import UserService
 
@@ -46,6 +50,14 @@ def get_user_profile_repository(session: DB_SESSION) -> UserProfileRepository:
 
 def get_refresh_token_repository(session: DB_SESSION) -> RefreshTokenRepository:
     return RefreshTokenRepository(session=session)
+
+
+def get_category_repository(session: DB_SESSION) -> CategoryRepository:
+    return CategoryRepository(session=session)
+
+
+def get_product_repository(session: DB_SESSION) -> ProductRepository:
+    return ProductRepository(session=session)
 
 
 def get_auth_service(
@@ -85,6 +97,32 @@ def get_user_profile_service(
         session=session,
         user_repository=user_repository,
         profile_repository=profile_repository,
+    )
+
+
+def get_category_service(
+    session: DB_SESSION,
+    category_repository: Annotated[
+        CategoryRepository, Depends(get_category_repository)
+    ],
+) -> CategoryService:
+    return CategoryService(
+        session=session,
+        category_repository=category_repository,
+    )
+
+
+def get_product_service(
+    session: DB_SESSION,
+    product_repository: Annotated[ProductRepository, Depends(get_product_repository)],
+    category_repository: Annotated[
+        CategoryRepository, Depends(get_category_repository)
+    ],
+) -> ProductService:
+    return ProductService(
+        session=session,
+        product_repository=product_repository,
+        category_repository=category_repository,
     )
 
 

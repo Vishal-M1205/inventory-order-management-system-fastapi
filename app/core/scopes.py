@@ -13,6 +13,10 @@ SCOPES = {
         "profile:update:self",
         "profile:read:any",
         "profile:update:any",
+        "category:create",
+        "category:update",
+        "product:create",
+        "product:update",
     ],
     RoleEnum.MANAGER: [
         "user:create:employee",
@@ -20,6 +24,10 @@ SCOPES = {
         # profile: self only
         "profile:read:self",
         "profile:update:self",
+        "category:create",
+        "category:update",
+        "product:create",
+        "product:update",
     ],
     RoleEnum.EMPLOYEE: [
         "profile:read:self",
